@@ -1,10 +1,12 @@
-# SuryaGrid AI — Agent Workflows (Phase 1.5)
+# SuryaGrid AI — Agent Workflows
 
 Agents are **deterministic Python coordinators** over the data/ml/dsm layers. No
 agent uses an LLM, and no agent performs numeric settlement math via a language
 model — physics (pvlib), ML (scikit-learn), and DSM slabs are all plain code.
 
-## Full run
+## Two workflow modes
+
+### A. Full run (site-based)
 
 ```
 Site selected
@@ -21,9 +23,27 @@ Site selected
 OrchestratorAgent sequences the per-interval Forecast→DSM→Risk→Explanation step.
 ```
 
+### B. Substation-driven run (selected from the 344-substation catalog)
+
+```
+SubstationContext
+ → (1) SubstationContextAgent    loads the selected substation as the context object
+ → (2) WeatherAgent              Open-Meteo @ the substation's OWN coordinates
+ → (3) SolarIrradianceAgent      Erbs decomposition → GHI/DNI/DHI → POA transposition
+ → (4) CloudRiskAgent            P(cloud drop) per hour from cloud cover + clear-sky ratio
+ → (5) GenerationTimelineAgent   pvlib physics: Faiman → PVWatts DC → inverter AC → MW per hour
+ → (6) DSMAgent                  interval-normalized deviation + dynamic risk score
+ → (7) OrchestratorAgent         assembles context-linked result + provenance + trace
+```
+
+Each step appends to `workflow.agent_trace[]` and every computed quantity records its
+formula and provenance in `workflow.calculation_trace{}`. See
+**[SUBSTATION_DRIVEN_AGENT_WORKFLOW.md](SUBSTATION_DRIVEN_AGENT_WORKFLOW.md)** for the
+full specification and example response.
+
 ---
 
-## Agents
+## Per-agent detail
 
 ### 1. SourceRegistryAgent (`agents/source_registry_agent.py`)
 - **Purpose:** serve/validate the source registry; provide citations.

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { getTimeline } from "@/lib/api";
 import MiniTimeline from "@/components/charts/MiniTimeline";
 import MetricCard from "@/components/cards/MetricCard";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 import type { TimelineData, TimelineEntry } from "@/lib/types";
 
 const LOCATIONS = [
@@ -48,6 +49,64 @@ export default function TimelinePage() {
         <h1 className="text-3xl font-bold text-white">Generation Timeline</h1>
         <p className="text-white/40 mt-1">Hourly solar nowcast with DSM deviation tracking · live Open-Meteo data</p>
       </div>
+
+      <HowItWorks
+        title="How the generation timeline is built"
+        subtitle="Hourly forecast from live weather → pvlib physics → DSM deviation"
+        steps={[
+          { step: "Fetch hourly weather from Open-Meteo", detail: "GHI, DNI, DHI, cloud cover, temperature, wind speed at the site coordinates for 1–7 forecast days." },
+          { step: "Compute solar position for each hour", detail: "Solar zenith (θz) and azimuth angles via pvlib.solarposition.get_solarposition for the site's lat/lon and timezone." },
+          { step: "Decompose irradiance (if needed)", detail: "If GHI is the only component available, Erbs decomposition splits it into DNI and DHI using the zenith angle." },
+          { step: "Transpose to plane-of-array (POA)", detail: "pvlib.get_total_irradiance(tilt, azimuth, zenith, azimuth_sun, dni, ghi, dhi) — isotropic sky diffuse model." },
+          { step: "Compute cell temperature", detail: "pvlib.temperature.faiman(poa, temp_air, wind_speed) — Faiman 2008 model." },
+          { step: "Calculate DC and AC power", detail: "PVWatts DC: pvwatts_dc(poa, t_cell, pdc0, γ=-0.0035). Inverter AC: pvwatts_inverter(dc, η=0.96), clipped to capacity." },
+          { step: "Compute DSM deviation per hour", detail: "Interval-normalized deviation: (|predicted − scheduled| / Δt) × block_hours / denominator × 100. Flag PENALTY_RISK when beyond band." },
+          { step: "Aggregate day summary", detail: "Sum predicted_energy_mwh, scheduled_energy_mwh, count penalty intervals, and total DSM charge." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "Open-Meteo", label: "live hourly weather" },
+        { name: "pvlib", label: "GHI→DNI/DHI + POA + PVWatts" },
+        { name: "DSM Engine", label: "interval-normalized deviation" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="POA irradiance (transposition)"
+          formula={"POA = get_total_irradiance(\n         tilt, surface_azimuth,\n         zenith, azimuth_sun,\n         dni, ghi, dhi)\n# isotropic sky diffuse model"}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="Cell temperature (Faiman)"
+          formula={"t_cell = poa * f1 + temp_air\nf1 = 9.5 / (5.7 + 3.8 * wind_speed)\n# Faiman 2008"}
+          variables={[
+            { name: "poa", desc: "Plane-of-array irradiance (W/m²)" },
+            { name: "wind_speed", desc: "Wind speed (m/s)" },
+          ]}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="DC & AC power (PVWatts)"
+          formula={"DC = pvwatts_dc(poa, t_cell, pdc0, γ)\n     pdc0 = capacity_mw × 1e6\n     γ = −0.0035 /°C (c-Si)\nAC = pvwatts_inverter(DC, pdc0, η=0.96)\nMW = min(AC / 1e6, capacity_mw)"}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="DSM deviation (per interval)"
+          formula={"dev_pct = (|pred − sched| / Δt_h)\n         × block_h / denom × 100\nenergy_mwh = MW × Δt_h\nstatus = dev_pct > band ? PENALTY_RISK : OK"}
+          variables={[
+            { name: "Δt_h", desc: "Interval hours (1 for hourly, 0.25 for 15-min)" },
+            { name: "block_h", desc: "DSM time block (time_block_minutes / 60)" },
+            { name: "denom", desc: "available_capacity or scheduled (MW)" },
+          ]}
+          source="USER_CONFIGURABLE"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="REAL_COORDINATE_BASED"
+        note="Hourly irradiance from Open-Meteo at real coordinates; generation derived via pvlib physics with a clear-sky schedule proxy."
+      />
 
       <div className="flex flex-wrap items-end gap-3 mb-8">
         <div>

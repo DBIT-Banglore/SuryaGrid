@@ -6,7 +6,16 @@ const features = [
   { title: "Energy Balance", desc: "Production vs consumption, surplus/deficit, self-consumption and grid flow.", color: "from-emerald-400 to-green-500", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
   { title: "Settlement Engine", desc: "Reward, penalty and discount settlement between owners and consumers.", color: "from-purple-400 to-fuchsia-500", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { title: "RL Optimization", desc: "Reinforcement learning tunes rates, trained on real historical irradiance.", color: "from-pink-400 to-rose-500", icon: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" },
-  { title: "Live Real Data", desc: "Open-Meteo irradiance, persisted in a real database, no API keys required.", color: "from-cyan-400 to-blue-500", icon: "M4 7v10c0 2 1.5 3 4 3h8c2.5 0 4-1 4-3V7M4 7c0 2 1.5 3 4 3h8c2.5 0 4-1 4-3M4 7c0-2 1.5-3 4-3h8c2.5 0 4 1 4 3" },
+  { title: "Live Real Data", desc: "Open-Meteo irradiance, NLR NSRDB, Kaggle PV, persisted in a real database.", color: "from-cyan-400 to-blue-500", icon: "M4 7v10c0 2 1.5 3 4 3h8c2.5 0 4-1 4-3V7M4 7c0 2 1.5 3 4 3h8c2.5 0 4-1 4-3M4 7c0-2 1.5-3 4-3h8c2.5 0 4 1 4 3" },
+];
+
+const pipeline = [
+  { label: "WeatherAgent", desc: "Open-Meteo live GHI/DNI/DHI", color: "text-cyan-300" },
+  { label: "SolarIrradianceAgent", desc: "Erbs decomposition → DNI/DHI", color: "text-amber-300" },
+  { label: "CloudRiskAgent", desc: "P(cloud drop) per hour", color: "text-purple-300" },
+  { label: "GenerationTimelineAgent", desc: "pvlib → MW per hour", color: "text-emerald-300" },
+  { label: "DSMAgent", desc: "deviation risk + dynamic risk", color: "text-orange-300" },
+  { label: "OrchestratorAgent", desc: "trace assembly + output", color: "text-blue-300" },
 ];
 
 export default function Home() {
@@ -49,11 +58,36 @@ export default function Home() {
         <h1 className="text-5xl font-bold text-white mb-3">
           Surya<span className="text-gradient">Grid</span> AI
         </h1>
-        <p className="text-xl text-white/60 mb-3">Real-Data Solar Forecasting &amp; DSM Risk Engine</p>
-        <p className="text-sm text-white/35 mb-10 max-w-md mx-auto leading-relaxed">
-          Phase 1.5 · Real weather (Open-Meteo), Kaggle-trained ML forecasting, an advanced
-          configurable DSM engine, substation data, and a fully sourced multi-agent pipeline.
+        <p className="text-xl text-white/60 mb-3">Real-Data Solar Forecasting & DSM Risk Engine</p>
+        <p className="text-sm text-white/35 mb-4 max-w-md mx-auto leading-relaxed">
+          Phase 1.5 · Real weather (Open-Meteo), NLR NSRDB historical, Kaggle-trained ML forecasting,
+          an advanced configurable DSM engine, 344 Bengaluru substations, and a fully sourced
+          multi-agent pipeline with pvlib physics.
         </p>
+
+        {/* Pipeline diagram */}
+        <div className="glass-card p-4 mb-8 max-w-2xl mx-auto">
+          <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-3">Substation-Driven Agent Pipeline</div>
+          <div className="flex flex-col gap-2">
+            {pipeline.map((stage, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/60">
+                  {i + 1}
+                </div>
+                <div className="text-left flex-1">
+                  <span className={`text-sm font-medium ${stage.color}`}>{stage.label}</span>
+                  <span className="text-white/30 text-xs ml-2">{stage.desc}</span>
+                </div>
+                {i < pipeline.length - 1 && (
+                  <svg className="w-3 h-3 text-white/10 absolute" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <Link href="/dashboard" className="btn-primary text-base px-8 py-3.5">
           Open Dashboard
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>

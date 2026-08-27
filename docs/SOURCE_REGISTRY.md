@@ -43,6 +43,7 @@ Verification performed live on **2026-07-05** via web search of primary/official
 | `SRC-CERC-DSM-2024` | ✅ framework | CERC DSM & Related Matters Regulations, 2024 confirmed; exact 'X'/rate values PENDING |
 | `SRC-KERC-DSM` | ⚠️ framework | KERC F&S&DSM framework (±5% solar band) — exact current slab order PENDING |
 | `SRC-PVLIB-001` | ✅ | pvlib-python documented models (Erbs, Faiman, PVWatts, Ineichen) |
+| `SRC-NSRDB-001` | ✅ live | **Verified 2026-08-26**: real Bengaluru download via developer.nlr.gov (8760 rows, SUNY India 2014). Lab renamed NREL→NLR; nrel.gov NXDOMAINs — old docs/pvlib URLs must use `.nlr.gov`. Free key required. Historical-only. |
 | `SRC-NASA-POWER-001` | ⏳ pending | endpoint structure known; not yet wired (future provider) |
 | `SRC-SOLCAST-001` | ⏳ pending | requires API key; modular slot reserved |
 
@@ -74,6 +75,30 @@ Verification performed live on **2026-07-05** via web search of primary/official
   archive API (`archive-api.open-meteo.com`) serves ERA5 reanalysis history.
 
 ### 3.2 Historical ML dataset  → see `DATA_SOURCE_CATALOG.md`
+
+<a name="src-nsrdb-001"></a>
+**`SRC-NSRDB-001` — NLR NSRDB (satellite-derived historical irradiance; ex-NREL)** — `OFFICIAL_SOURCE`
+- URL: https://developer.nlr.gov/docs/solar/nsrdb/ (**live-verified 2026-08-26** with a real
+  Bengaluru download). ⚠️ The laboratory was renamed **NREL → NLR** (National Laboratory of the
+  Rockies) and `nrel.gov` now NXDOMAINs — all older references (incl. pvlib docs) must read `.nlr.gov`.
+- License: free with a developer key (https://developer.nlr.gov/signup).
+- India coverage (queried at POINT(77.59 12.97)): `suny-india` 2000–2014 hourly,
+  `himawari` 2016–2020 at 10/30/60-min, plus `himawari-tmy`. PSM3 Americas datasets do NOT cover India.
+- Fields used (all irradiance in **W/m²**):
+  | Our field | Request attribute | Response column |
+  |-----------|-------------------|-----------------|
+  | `ghi_w_m2` | `ghi` | `GHI` |
+  | `dni_w_m2` | `dni` | `DNI` |
+  | `dhi_w_m2` | `dhi` | `DHI` |
+  | `temperature_c` | `air_temperature` | `Temperature` |
+  | `wind_speed_mps` | `wind_speed` | `Wind Speed` |
+  | `pressure_hpa` | `surface_pressure` | `Pressure` |
+- Response format: HTTP 302 → pre-signed S3 CSV; row0 site metadata, row1 units, row2 field
+  names, row3+ data in local standard time; `-999` = missing.
+- Role: HISTORICAL only (training / backtesting / cross-validation of Open-Meteo). It never
+  serves live forecasts; missing key raises `NOT_AVAILABLE` (503), never a silent fallback.
+- Code: `app/providers/nsrdb.py`, `app/data_sources/nsrdb_provider.py`; config `NREL_API_KEY`.
+- Sample kept at `backend/data/nsrdb_suny_bengaluru_2014_sample.csv` (8760 rows, full year 2014).
 
 <a name="src-kaggle-solar-001"></a>
 **`SRC-KAGGLE-SOLAR-001` — Kaggle Solar Radiation Prediction (NASA HI-SEAS)** — `OFFICIAL_SOURCE` (dataset), values fitted from it are `DATASET_DERIVED`

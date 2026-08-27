@@ -1,7 +1,7 @@
 {
   "region": "bengaluru",
   "data_mode": "real",
-  "trained_at": "2026-07-06T15:44:06.251296+00:00",
+  "trained_at": "2026-08-27T08:16:37.897872+00:00",
   "trained_agents": [
     "solar",
     "cloud",
@@ -16,14 +16,14 @@
     "solar": {
       "agent": "solar",
       "status": "TRAINED",
-      "model_file": "D:\\Suryagrid AI\\backend\\models\\trained\\solar_forecast_model.pkl",
-      "model_card": "D:\\Suryagrid AI\\backend\\models\\metadata\\solar_forecast_model_card.json",
+      "model_file": "/app/models/trained/solar_forecast_model.pkl",
+      "model_card": "/app/models/metadata/solar_forecast_model_card.json",
       "prediction_type": "irradiance_forecast",
       "metrics": {
-        "mae": 29.1238,
-        "rmse": 57.5115,
-        "mape_percent": 29.499,
-        "r2": 0.9563
+        "mae": 29.2664,
+        "rmse": 57.7709,
+        "mape_percent": 30.954,
+        "r2": 0.9559
       },
       "chosen_model": "hist_gradient_boosting",
       "production_ready": true,
@@ -32,8 +32,8 @@
     "cloud": {
       "agent": "cloud",
       "status": "TRAINED",
-      "model_file": "D:\\Suryagrid AI\\backend\\models\\trained\\cloud_risk_classifier.pkl",
-      "model_card": "D:\\Suryagrid AI\\backend\\models\\metadata\\cloud_risk_classifier_card.json",
+      "model_file": "/app/models/trained/cloud_risk_classifier.pkl",
+      "model_card": "/app/models/metadata/cloud_risk_classifier_card.json",
       "prediction_type": "irradiance_drop_risk",
       "metrics": {
         "accuracy": 0.8659,
@@ -48,9 +48,9 @@
     "dsm": {
       "agent": "dsm",
       "status": "TRAINED",
-      "model_file": "D:\\Suryagrid AI\\backend\\models\\trained\\dsm_classifier.pkl",
-      "rules_engine": "D:\\Suryagrid AI\\backend\\models\\trained\\dsm_rules_engine.json",
-      "model_card": "D:\\Suryagrid AI\\backend\\models\\metadata\\dsm_model_card.json",
+      "model_file": "/app/models/trained/dsm_classifier.pkl",
+      "rules_engine": "/app/models/trained/dsm_rules_engine.json",
+      "model_card": "/app/models/metadata/dsm_model_card.json",
       "prediction_type": "dsm_deviation_breach_risk",
       "metrics": {
         "accuracy": 0.7117,
@@ -66,15 +66,15 @@
     "load": {
       "agent": "load",
       "status": "TRAINED_NON_LOCAL",
-      "model_file": "D:\\Suryagrid AI\\backend\\models\\trained\\load_forecast_model.pkl",
-      "model_card": "D:\\Suryagrid AI\\backend\\models\\metadata\\load_forecast_model_card.json",
-      "training_parquet": "D:\\Suryagrid AI\\backend\\data\\ml\\load_agent_training.parquet",
+      "model_file": "/app/models/trained/load_forecast_model.pkl",
+      "model_card": "/app/models/metadata/load_forecast_model_card.json",
+      "training_parquet": "/app/data/ml/load_agent_training.parquet",
       "prediction_type": "load_forecast",
       "metrics": {
-        "mae": 4629.4623,
-        "rmse": 6259.5023,
-        "mape_percent": 2.549,
-        "r2": 0.883
+        "mae": 4602.1813,
+        "rmse": 6249.2767,
+        "mape_percent": 2.534,
+        "r2": 0.8834
       },
       "production_ready": false,
       "geography": "India (national)",

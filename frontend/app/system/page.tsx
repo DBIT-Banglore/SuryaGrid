@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { API_BASE, getSystemStatus, probeBackend } from "@/lib/api";
 import OfflineBanner from "@/components/OfflineBanner";
+import { HowItWorks, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 
 const AGENTS = [
   "SourceRegistryAgent", "KaggleDataAgent", "LiveWeatherAgent", "LocationDataAgent",
@@ -41,6 +42,32 @@ export default function SystemPage() {
     <div className="max-w-6xl mx-auto animate-fade-up">
       <h1 className="text-3xl font-bold text-white">System Status</h1>
       <p className="text-white/40 mt-1 mb-6">Backend, database, cache, providers, model, and agents.</p>
+
+      <HowItWorks
+        title="How the SuryaGrid AI platform is architected"
+        subtitle="Deterministic multi-agent pipeline with pvlib physics, ML forecasting, and DSM risk"
+        steps={[
+          { step: "FastAPI backend (Python 3.12)", detail: "All numeric computation is deterministic Python — no LLM performs math. FastAPI exposes REST endpoints under /api/v1/ for orchestration, forecasting, DSM, energy, settlement, RL, and data sources." },
+          { step: "Data layer", detail: "PostgreSQL for persistence (sites, substations, RL training runs, DSM profiles). Redis for caching and rate limiting. Parquet files for static ML datasets (Kaggle, OSM substations)." },
+          { step: "Agent pipeline (12 deterministic agents)", detail: "SourceRegistry → KaggleData → LiveWeather → LocationData → FeatureEngineering → Forecast → DSMEngine → FuzzyRisk → Explanation → Orchestrator → APIManagement → Persistence." },
+          { step: "Weather data (Open-Meteo + NLR NSRDB)", detail: "Live hourly weather from Open-Meteo (no API key). Historical archive from NLR NSRDB (developer.nlr.gov, free API key) — SUNY India 2000-2014, Himawari 2016-2020." },
+          { step: "ML models (scikit-learn)", detail: "solar_forecast_model.pkl (HistGBT, GHI prediction), cloud_risk_classifier.pkl (HistGBT, P(cloud drop)), kaggle_pv_ac_model.pkl (HistGBT, PV AC output). All trained on real data, stored with model cards." },
+          { step: "Frontend (Next.js 14)", detail: "App Router with server components. Every page shows formulas, provenance, and workflow steps. Dark glassmorphism UI. Deployed at suryagrid.mithungowda.in." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "FastAPI", label: "Python 3.12 backend" },
+        { name: "PostgreSQL", label: "persistence" },
+        { name: "Redis", label: "cache + rate limit" },
+        { name: "Next.js 14", label: "frontend" },
+        { name: "pvlib", label: "physics engine" },
+      ]} />
+
+      <ProvenanceNote
+        label="DETERMINISTIC"
+        note="All 12 agents are deterministic Python — no LLM in the numeric path. Provenance is tracked end-to-end: every output carries a source classification."
+      />
 
       {online === false && <OfflineBanner base={API_BASE} />}
       {online === null && <div className="glass-card p-6 text-white/50">Checking backend…</div>}

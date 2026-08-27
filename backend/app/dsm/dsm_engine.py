@@ -9,10 +9,15 @@ Deviation is computed against the profile's denominator (available capacity for
 CERC/KERC WS sellers, or scheduled for simple mode). Charges apply only to the
 portion of deviation beyond the tolerance band, on a per-slab basis. No LLM does
 the math. See docs/FORMULA_SOURCES.md#9-deviation--dsm and docs/DSM_RULE_SOURCES.md.
+
+Each result also carries a DSM risk classification (NORMAL/MODERATE/HIGH/CRITICAL)
+with a recommended action and the applicable penalty slab — see
+docs/FORMULA_SOURCES.md#14-dsm-risk-classification.
 """
 
 from __future__ import annotations
 
+from app.agents.dynamic_risk import classify_dsm_risk
 from app.dsm.base_rules import RuleProfile
 from app.dsm.dsm_sources import (
     DENOM_AVAILABLE_CAPACITY,
@@ -70,7 +75,19 @@ class DSMEngine:
 
         deviation_mw = measured_mw - scheduled_mw
         abs_dev = abs(deviation_mw)
-        deviation_percent = (abs_dev / denom) * 100.0
+
+        # Deviation formula (project standard, docs/FORMULA_SOURCES.md#9):
+        #   DSM_deviation_pct = ((measured - scheduled) / time_interval) x 100
+        # The MW imbalance is normalised by the DSM interval in hours (so 15-min
+        # blocks and hourly blocks are comparable) and expressed as a percent of
+        # the profile's regulatory denominator (available capacity for CERC/KERC
+        # WS profiles, scheduled MW in simple mode). When the caller passes an
+        # interval equal to the profile's own time block, this reduces to the
+        # classic per-block percentage.
+        block_hours = profile.time_block_minutes / 60.0
+        deviation_percent = (
+            (abs_dev / max(interval_hours, 1e-9)) * block_hours / denom
+        ) * 100.0
 
         if deviation_percent <= profile.tolerance_percent:
             direction = DIR_WITHIN
@@ -189,6 +206,7 @@ class DSMEngine:
         explanation,
         chargeable_energy_mwh=0.0,
     ) -> dict:
+        risk = classify_dsm_risk(deviation_percent)
         return {
             "scheduled_generation_mw": round(scheduled_mw, 4),
             "measured_generation_mw": round(measured_mw, 4),
@@ -204,4 +222,8 @@ class DSMEngine:
             "rule_source": rule_source,
             "slab_breakdown": slabs,
             "explanation": explanation,
+            "risk_level": risk["risk_level"],
+            "risk_action": risk["action"],
+            "penalty_slab": risk["penalty_slab"],
+            "rate_inr_per_kwh": risk["rate_inr_per_kwh"],
         }

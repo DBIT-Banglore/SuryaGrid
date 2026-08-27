@@ -1,6 +1,6 @@
 {
   "model_name": "kaggle_pv_ac_model",
-  "model_version": "20260707103543",
+  "model_version": "20260826122559",
   "training_data_files": [
     "kaggle_pv_ac_training.parquet",
     "kaggle_pv_generation_processed.parquet"
@@ -52,6 +52,6 @@
   ],
   "prediction_type": "pv_ac_power",
   "model_type": "hist_gradient_boosting",
-  "created_at": "2026-07-07T10:35:43.187768+00:00",
+  "created_at": "2026-08-26T12:25:59.809672+00:00",
   "notes": []
 }

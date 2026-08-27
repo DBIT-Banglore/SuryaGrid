@@ -1,61 +1,29 @@
 {
   "model_name": "kaggle_load_forecast_model",
-  "model_version": "20260707103545",
-  "training_data_files": [
-    "kaggle_load_training.parquet",
-    "kaggle_load_processed.parquet"
-  ],
-  "training_data_sources": [
-    {
-      "name": "Kaggle: shubhamvashisht/hourly-load-india-electrical-load-forecasting",
-      "url": "https://www.kaggle.com/datasets/shubhamvashisht/hourly-load-india-electrical-load-forecasting",
-      "label": "REAL_INDIA",
-      "geography": "India (National; Southern Region proxy)"
-    }
-  ],
-  "training_geography": "India (national aggregate demand)",
+  "model_version": "20260826122559",
+  "training_data_files": [],
+  "training_data_sources": [],
+  "training_geography": "India",
   "target_geography": "Bengaluru, Karnataka, India",
   "local_data_available": false,
   "domain_shift_risk": "HIGH",
-  "features": [
-    "hour_sin",
-    "hour_cos",
-    "dow_sin",
-    "dow_cos",
-    "doy_sin",
-    "doy_cos",
-    "is_weekend",
-    "lag_24h",
-    "lag_168h",
-    "roll_24h_mean"
-  ],
+  "features": [],
   "target": "national_demand_mw",
-  "train_rows": 37248,
-  "test_rows": 9312,
+  "train_rows": 0,
+  "test_rows": 0,
   "train_test_split_method": "chronological_80_20",
-  "metrics": {
-    "chosen_model": "hist_gradient_boosting",
-    "mae": 4641.3897,
-    "rmse": 6404.6509,
-    "mape_percent": 2.472,
-    "r2": 0.8927
-  },
-  "limitations": [
-    "Real India NATIONAL hourly demand (2019+), not Karnataka/Bengaluru feeder load.",
-    "Southern Region column exists as the closest proxy but is a 5-state aggregate."
-  ],
+  "metrics": {},
+  "limitations": [],
   "production_ready": false,
-  "reason_if_not_production_ready": "REAL_INDIA national demand, not Karnataka-local; high domain shift. Usable as an India baseline only.",
+  "reason_if_not_production_ready": "INSUFFICIENT_REAL_KAGGLE_LOAD_DATA",
   "uses_synthetic_data": false,
   "synthetic_percentage": 0.0,
   "uses_non_local_data": false,
   "non_local_data_percentage": 0.0,
   "data_mode": "real",
-  "source_status": [
-    "REAL_INDIA"
-  ],
+  "source_status": [],
   "prediction_type": "load_forecast",
-  "model_type": "hist_gradient_boosting",
-  "created_at": "2026-07-07T10:35:45.823489+00:00",
+  "model_type": null,
+  "created_at": "2026-08-26T12:25:59.816795+00:00",
   "notes": []
 }

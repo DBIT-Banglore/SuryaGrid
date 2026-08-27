@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getRLRuns, trainRL } from "@/lib/api";
 import { LOCATIONS } from "@/lib/locations";
 import MetricCard from "@/components/cards/MetricCard";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 import type { TrainingRun } from "@/lib/types";
 
 export default function RLPage() {
@@ -47,6 +48,72 @@ export default function RLPage() {
           Train the reward policy on real historical irradiance (Open-Meteo archive → pvlib digital twin)
         </p>
       </div>
+
+      <HowItWorks
+        title="How the RL policy training works"
+        subtitle="REINFORCE policy gradient on a pvlib digital twin of the plant"
+        steps={[
+          { step: "Fetch real historical weather", detail: "Open-Meteo Archive API provides past GHI, DNI, DHI, cloud cover, temperature for the site coordinates. Days (days_back) or Years (years) of data are fetched." },
+          { step: "Build pvlib digital twin", detail: "The historical irradiance is converted to hourly generation using the same pvlib physics pipeline (Erbs → POA → Faiman → PVWatts → inverter). This becomes the 'ground truth' production curve." },
+          { step: "Define the RL environment", detail: "State = {hour, GHI, cloud, forecast_confidence, current_deviation}. Action = adjust {penalty_rate, bonus_rate, discount_rate} within bounds. Reward = Σ(bonus − penalty) − α × variance(deviation)." },
+          { step: "REINFORCE policy gradient", detail: "A policy network π(a|s) is trained to maximize expected discounted return G_t. The gradient is ∇θ J = E[∇θ log π(a|s) × G_t]. Training runs for the specified number of episodes." },
+          { step: "Output: learned rate policy", detail: "The trained policy outputs optimized penalty/bonus/discount rates that minimize penalty exposure while maintaining surplus. These rates feed into the Settlement Engine." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "Open-Meteo Archive", label: "historical irradiance" },
+        { name: "pvlib", label: "digital twin" },
+        { name: "REINFORCE", label: "policy gradient" },
+        { name: "gymnasium", label: "RL environment" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="RL reward function"
+          formula={"reward_t = bonus_t − penalty_t\nreturn G_t = Σ_{k=0}^{T} γ^k × reward_{t+k}\n# γ = discount rate (0.99 default)"}
+          variables={[
+            { name: "bonus_t", desc: "Surplus reward at hour t (₹/kWh × surplus_kWh)" },
+            { name: "penalty_t", desc: "Shortfall charge at hour t (₹/kWh × deficit_kWh)" },
+          ]}
+          source="MODEL_LEARNED"
+        />
+        <FormulaCard
+          label="REINFORCE policy gradient"
+          formula={"∇θ J(θ) = E_{τ ~ π_θ}\n  [ Σ_{t=0}^{T} ∇θ log π_θ(a_t | s_t) × G_t ]\n# θ ← θ + α × ∇θ J"}
+          variables={[
+            { name: "π_θ(a|s)", desc: "Policy network (action probabilities given state)" },
+            { name: "α", desc: "Learning rate" },
+            { name: "G_t", desc: "Discounted return from time t" },
+          ]}
+          source="OFFICIAL_SOURCE · REINFORCE"
+        />
+        <FormulaCard
+          label="Policy state space"
+          formula={"state = {\n  hour_of_day,      # 0-23\n  ghi_w_m2,         # current irradiance\n  cloud_cover_pct,  # cloud conditions\n  forecast_conf,    # 0.4–0.99\n  current_dev_pct   # |actual − scheduled| / scheduled\n}"}
+          source="MODEL_LEARNED"
+        />
+        <FormulaCard
+          label="Policy action space"
+          formula={"action = {\n  penalty_rate,   # ₹/kWh for under-production\n  bonus_rate,     # ₹/kWh for over-production\n  discount_rate   # ₹/kWh consumer credit\n}\n# bounds: penalty [1, 10], bonus [0, 5], discount [0, 3]"}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Hourly production (digital twin)"
+          formula={"Erbs(ghi, zenith) → DNI, DHI\nPOA = get_total_irradiance(...)\nDC = pvwatts_dc(poa, t_cell, pdc0, γ)\nAC = pvwatts_inverter(DC, pdc0, η=0.96)\nprod_kWh = (AC / 1e6) × capacity_mw × Δt"}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="Confidence score"
+          formula={"confidence = clamp(1 − 0.35 × cloud_fraction, 0.4, 0.99)\n# Used as a state feature and for hybrid forecast blending"}
+          source="FALLBACK_DEFAULT"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="MODEL_LEARNED"
+        note="The RL policy is trained on real historical irradiance data via a pvlib digital twin. Rates are optimized, not declared by a regulator — they are decision-support, not binding tariffs."
+      />
 
       <div className="glass-card p-6 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">

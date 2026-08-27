@@ -16,43 +16,18 @@
     },
     "kaggle_solar": {
       "agent": "kaggle_solar",
-      "status": "TRAINED",
-      "metrics": {
-        "mae": 40.0509,
-        "rmse": 74.9569,
-        "mape_percent": 32.061,
-        "r2": 0.9203
-      },
-      "production_ready": true,
-      "geography": "REAL_BENGALURU",
-      "rows": 10219
+      "status": "SKIPPED",
+      "reason": "no Bengaluru GHI data"
     },
     "kaggle_cloud": {
       "agent": "kaggle_cloud",
-      "status": "TRAINED",
-      "metrics": {
-        "accuracy": 0.7901,
-        "precision": 0.8521,
-        "recall": 0.8417,
-        "f1": 0.8468,
-        "roc_auc": 0.8506
-      },
-      "production_ready": true,
-      "geography": "REAL_BENGALURU",
-      "rows": 5356
+      "status": "SKIPPED",
+      "reason": "insufficient/one-class cloud data"
     },
     "kaggle_load": {
       "agent": "kaggle_load",
-      "status": "TRAINED",
-      "metrics": {
-        "mae": 4641.3897,
-        "rmse": 6404.6509,
-        "mape_percent": 2.472,
-        "r2": 0.8927
-      },
-      "production_ready": false,
-      "geography": "REAL_INDIA",
-      "rows": 46560
+      "status": "SKIPPED",
+      "reason": "INSUFFICIENT_REAL_KAGGLE_LOAD_DATA"
     }
   }
 }

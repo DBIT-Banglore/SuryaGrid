@@ -1,6 +1,6 @@
 {
   "model_name": "solar_forecast_model",
-  "model_version": "20260706154402",
+  "model_version": "20260827081628",
   "training_data_files": [
     "solar_agent_training.parquet",
     "bengaluru_weather_solar_history.parquet"
@@ -49,10 +49,10 @@
   "train_test_split_method": "chronological_80_20",
   "metrics": {
     "chosen_model": "hist_gradient_boosting",
-    "mae": 29.1238,
-    "rmse": 57.5115,
-    "mape_percent": 29.499,
-    "r2": 0.9563,
+    "mae": 29.2664,
+    "rmse": 57.7709,
+    "mape_percent": 30.954,
+    "r2": 0.9559,
     "candidates": {
       "random_forest": {
         "mae": 29.193,
@@ -61,10 +61,10 @@
         "r2": 0.9543
       },
       "hist_gradient_boosting": {
-        "mae": 29.1238,
-        "rmse": 57.5115,
-        "mape_percent": 29.499,
-        "r2": 0.9563
+        "mae": 29.2664,
+        "rmse": 57.7709,
+        "mape_percent": 30.954,
+        "r2": 0.9559
       }
     }
   },
@@ -87,7 +87,7 @@
   ],
   "prediction_type": "irradiance_forecast",
   "model_type": "hist_gradient_boosting",
-  "created_at": "2026-07-06T15:44:02.973336+00:00",
+  "created_at": "2026-08-27T08:16:28.589119+00:00",
   "notes": [
     "production_ready_for_pv_generation=false (irradiance model only).",
     "NASA POWER vs Open-Meteo daily GHI agreement documented in the build manifest."

@@ -5,12 +5,12 @@
     77.5946
   ],
   "data_mode": "real",
-  "built_at": "2026-07-06T15:42:45.197980+00:00",
+  "built_at": "2026-08-27T08:16:06.400128+00:00",
   "datasets": {
     "weather_solar_history": {
       "status": "OK",
       "rows": 26304,
-      "file": "D:\\Suryagrid AI\\backend\\data\\ml\\bengaluru_weather_solar_history.parquet",
+      "file": "/app/data/ml/bengaluru_weather_solar_history.parquet",
       "source_label": "REAL_COORDINATE_BASED",
       "columns": [
         "timestamp_local",
@@ -58,24 +58,24 @@
     },
     "substations": {
       "status": "OK",
-      "rows": 344,
-      "file": "D:\\Suryagrid AI\\backend\\data\\ml\\bengaluru_substations_cleaned.parquet",
-      "grid_file": "D:\\Suryagrid AI\\backend\\data\\ml\\bengaluru_grid_features.parquet",
+      "rows": 345,
+      "file": "/app/data/ml/bengaluru_substations_cleaned.parquet",
+      "grid_file": "/app/data/ml/bengaluru_grid_features.parquet",
       "source_label": "REAL_BENGALURU/REAL_KARNATAKA",
       "quality": {
-        "total_substations": 344,
-        "with_voltage_kv": 141,
-        "with_operator": 147,
+        "total_substations": 345,
+        "with_voltage_kv": 143,
+        "with_operator": 149,
         "with_district": 0,
         "with_capacity_mva": 0,
-        "pct_voltage_known": 41.0,
+        "pct_voltage_known": 41.4,
         "pct_capacity_known": 0.0
       }
     },
     "load_history": {
       "status": "OK",
       "rows": 11664,
-      "file": "D:\\Suryagrid AI\\backend\\data\\ml\\karnataka_or_india_load_history.parquet",
+      "file": "/app/data/ml/karnataka_or_india_load_history.parquet",
       "source_label": "REAL_INDIA",
       "dataset": "smarthkaushal/energy-demand-profile",
       "geography": "India (national) - NOT Bengaluru-specific"
@@ -83,7 +83,7 @@
     "solar_agent_training": {
       "status": "OK",
       "rows": 26304,
-      "file": "D:\\Suryagrid AI\\backend\\data\\ml\\solar_agent_training.parquet",
+      "file": "/app/data/ml/solar_agent_training.parquet",
       "features": [
         "hour_sin",
         "hour_cos",
@@ -104,7 +104,7 @@
     "cloud_agent_training": {
       "status": "OK",
       "rows": 12041,
-      "file": "D:\\Suryagrid AI\\backend\\data\\ml\\cloud_agent_training.parquet",
+      "file": "/app/data/ml/cloud_agent_training.parquet",
       "features": [
         "hour_sin",
         "hour_cos",
@@ -124,7 +124,7 @@
     "dsm_agent_training": {
       "status": "OK",
       "rows": 12031,
-      "file": "D:\\Suryagrid AI\\backend\\data\\ml\\dsm_agent_training.parquet",
+      "file": "/app/data/ml/dsm_agent_training.parquet",
       "features": [
         "hour_sin",
         "hour_cos",

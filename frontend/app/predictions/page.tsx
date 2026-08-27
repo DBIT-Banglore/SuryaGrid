@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { predict } from "@/lib/api";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 import type { PredictResult } from "@/lib/types";
 
 const SCENARIOS = [
@@ -58,6 +59,56 @@ export default function Predictions() {
           DSM outcomes across weather regimes · {CAPACITY} MW plant, {SCHEDULED} MW scheduled (pvlib physics)
         </p>
       </div>
+
+      <HowItWorks
+        title="How scenario analysis works"
+        subtitle="Predefined weather scenarios → pvlib physics → DSM deviation and risk classification"
+        steps={[
+          { step: "Define 4 weather scenarios", detail: "Clear Sky (GHI 950, 5% cloud), Partly Cloudy (620, 45%), Overcast (300, 80%), Storm (110, 95%). Each scenario has GHI, DNI, DHI, cloud cover, and temperature values." },
+          { step: "Run pvlib physics for each scenario", detail: "For each set of irradiance values, the pipeline computes: Erbs decomposition (if needed) → POA transposition → Faiman cell temp → PVWatts DC → inverter AC → predicted generation MW." },
+          { step: "Compute DSM deviation", detail: "deviation_pct = (|predicted − scheduled| / Δt_h) × block_h / capacity × 100, with the 10% DSM threshold band." },
+          { step: "Classify risk level", detail: "The fuzzy risk agent combines breach ratio, cloud cover, and confidence into LOW/MEDIUM/HIGH/CRITICAL bands via triangular membership functions." },
+          { step: "Compare side-by-side", detail: "All four scenarios are run in parallel and displayed in a table so you can see how generation, deviation, and penalty risk change with weather conditions." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "pvlib", label: "GHI→DNI/DHI + POA + PVWatts" },
+        { name: "DSM Engine", label: "deviation + slab charges" },
+        { name: "Fuzzy Risk", label: "LOW/MEDIUM/HIGH/CRITICAL" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="PV generation (PVWatts)"
+          formula={"DC = pvwatts_dc(poa, t_cell, pdc0, γ=-0.0035)\nAC = pvwatts_inverter(DC, pdc0, η=0.96)\npredicted_mw = min(AC / 1e6, capacity_mw)"}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="DSM deviation (per scenario)"
+          formula={"dev_pct = (|predicted − scheduled| / Δt_h)\n         × block_h / capacity × 100\nstatus = dev_pct > threshold ? PENALTY_RISK : OK"}
+          variables={[
+            { name: "threshold", desc: "Configured DSM band (default 10%)" },
+            { name: "capacity", desc: "Installed capacity (MW)" },
+          ]}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Penalty cost estimate"
+          formula={"penalty_cost = chargeable_kWh × penalty_rate\nchargeable_kWh = (dev_pct / 100) × capacity × 1000 × Δt_h"}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Fuzzy risk classification"
+          formula={"inputs: breach_ratio = dev_pct / band\n         confidence = 1 − 0.35 × cloud\n         cloud_volatility\n→ triangular MFs → LOW / MEDIUM / HIGH / CRITICAL"}
+          source="FALLBACK_DEFAULT"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="OFFICIAL_SOURCE + FALLBACK_DEFAULT"
+        note="Generation is computed via pvlib physics (OFFICIAL_SOURCE). Risk classification uses fuzzy membership functions (FALLBACK_DEFAULT, tunable). Penalty cost is an estimate — not a regulatory charge."
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {SCENARIOS.map((s, i) => (

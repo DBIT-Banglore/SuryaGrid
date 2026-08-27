@@ -1,6 +1,6 @@
 {
   "model_name": "rl_policy",
-  "model_version": "20260706154406",
+  "model_version": "20260827081637",
   "training_data_files": [
     "bengaluru_weather_solar_history.parquet"
   ],
@@ -46,7 +46,7 @@
   ],
   "prediction_type": "rl_dispatch_policy",
   "model_type": "none",
-  "created_at": "2026-07-06T15:44:06.251296+00:00",
+  "created_at": "2026-08-27T08:16:37.880002+00:00",
   "notes": [
     "preconditions={'real_bengaluru_weather': True, 'real_local_load': False, 'official_tariff_rupee_reward': False}",
     "policy_zip_written=false"

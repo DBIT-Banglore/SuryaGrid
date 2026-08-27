@@ -13,6 +13,7 @@ from app.core.exceptions import NotFoundError
 from app.data_sources import source_registry as sr
 from app.data_sources.kaggle_solar_provider import KaggleSolarProvider
 from app.data_sources.live_weather_provider import LiveWeatherProvider
+from app.data_sources.nsrdb_provider import NSRDBDataSource
 from app.data_sources.substation_provider import SubstationProvider
 from app.data_sources.synthetic_weather_provider import SyntheticWeatherProvider
 from app.utils.response import success_response
@@ -46,6 +47,7 @@ async def data_sources_status():
         KaggleSolarProvider(),
         SubstationProvider(),
         SyntheticWeatherProvider(),
+        NSRDBDataSource(),
     ]
     statuses = [p.status().to_dict() for p in providers]
     return success_response(

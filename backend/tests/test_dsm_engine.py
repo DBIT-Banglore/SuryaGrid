@@ -43,13 +43,29 @@ def test_invalid_schedule_no_divide_by_zero():
 
 def test_simple_threshold_mode():
     p = simple_profile(tolerance_percent=10.0, penalty_rate_per_mwh=1000.0)
-    # scheduled 10, measured 7 -> deviation 3MW=30% of scheduled; band 10%.
-    # chargeable slab 10-30% (20%): 0.20*10*1h = 2 MWh * 1000 INR/MWh = 2000
+    # scheduled 10, measured 7 over interval_hours=1.0 with a 15-min block.
+    # Interval-normalised deviation: (3/1.0)*(0.25)/10 x100 = 7.5% -> within the
+    # 10% band, no penalty. The SAME 3MW inside ONE 15-min block breaches
+    # (see next test) - that is exactly what interval normalisation encodes.
     r = engine.evaluate(
         p, scheduled_mw=10, measured_mw=7, installed_capacity_mw=50, interval_hours=1.0
     )
+    assert r["penalty_status"] == "NO_PENALTY"
+    assert r["estimated_dsm_charge"] == 0.0
+    assert r["deviation_percent"] == 7.5
+
+
+def test_simple_threshold_breach_in_single_block():
+    # Same 3MW imbalance delivered within one 15-min block (interval == block):
+    # formula reduces to the classic per-block % -> 30%, breaching the 10% band.
+    p = simple_profile(tolerance_percent=10.0, penalty_rate_per_mwh=1000.0)
+    r = engine.evaluate(
+        p, scheduled_mw=10, measured_mw=7, installed_capacity_mw=50, interval_hours=0.25
+    )
     assert r["penalty_status"] == "PENALTY_RISK"
-    assert r["estimated_dsm_charge"] == 2000.0
+    # chargeable slab 10-30% (20%): 0.20*10*0.25h = 0.5 MWh * 1000 INR/MWh = 500
+    assert r["estimated_dsm_charge"] == 500.0
+    assert r["deviation_percent"] == 30.0
 
 
 def test_source_status_marked_pending_for_regulatory_profiles():

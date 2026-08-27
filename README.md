@@ -52,6 +52,108 @@ work, unavailable inputs **block** their calculations instead of faking them:
 Full design: **[docs/SUBSTATION_DRIVEN_AGENT_WORKFLOW.md](docs/SUBSTATION_DRIVEN_AGENT_WORKFLOW.md)** ·
 DSM input trace: **[docs/DSM_SUBSTATION_INPUT_TRACE.md](docs/DSM_SUBSTATION_INPUT_TRACE.md)**.
 
+### Core formulas (project standards)
+
+Every number on the frontend and in the API is computed by deterministic code — no LLM
+performs math. The full reference with sources and provenance classification for each
+formula is in **[docs/FORMULA_SOURCES.md](docs/FORMULA_SOURCES.md)**.
+
+```
+─── Solar physics (pvlib, OFFICIAL_SOURCE) ───
+
+# Irradiance closure (verified on NSRDB Himawari 2019 Bengaluru: MAE 0.4 W/m² ≈ 0.13%)
+GHI = DNI·cos(θz) + DHI          # θz = solar zenith angle from NREL SPA
+
+# Erbs decomposition (when only GHI is available)
+dni, dhi = pvlib.irradiance.erbs(ghi, zenith, datetime)
+
+# Plane-of-array transposition
+poa = pvlib.irradiance.get_total_irradiance(tilt, azimuth, zenith, azimuth_sun, dni, ghi, dhi)
+
+# Faiman cell temperature
+T_cell = pvlib.temperature.faiman(poa, temp_air, wind_speed)
+
+# PVWatts DC power
+P_dc = pvwatts_dc(poa, T_cell, P_dc0, γ_pdc)   # γ_pdc = −0.0035 /°C (crystalline Si)
+
+# Inverter AC power (clipped to [0, capacity_mw])
+P_ac = pvwatts(pdc, pdc0, eta_inv_nom=0.96)
+
+# Confidence score
+confidence = clamp(1 − 0.35·cloud_fraction, 0.4, 0.99)   # raised ≥0.9 in near-dark hours
+
+─── DSM deviation (interval-normalised, USER_CONFIGURABLE) ───
+
+deviation_mw      = actual_or_predicted_mw − scheduled_mw
+deviation_pct     = ((|deviation_mw| / Δt_hours) × block_hours / denominator) × 100
+                    # denominator = available_capacity (CERC 6(2)(a)) or scheduled (simple)
+direction         = UNDER_INJECTION | OVER_INJECTION | WITHIN_LIMIT
+chargeable_energy = Σ over slabs of (pct_in_slab/100 × capacity × interval_hours)
+dsm_charge        = Σ chargeable_energy_slab_kWh × slab_rate
+
+─── Dynamic risk score (FALLBACK_DEFAULT, transparent & reproducible) ───
+
+dev_pct      = |actual_kwh − scheduled_kwh| / scheduled_kwh × 100
+pv_risk      = (1 − clamp(pv_score, 0, 1)) × 100
+raw_score    = 0.6 × dev_pct + 0.4 × pv_risk
+risk_score   = clamp(raw_score, 0, 100)
+# Example: 88 kWh actual vs 100 kWh, pv_score=0.85 → 12% dev, 15% pv-risk → score 13.2
+
+─── Fuzzy risk (FALLBACK_DEFAULT, triangular membership functions) ───
+
+# Combines DSM breach ratio, forecast confidence, and cloud volatility → 0-100 score
+# Bands: NORMAL (≤15) / MODERATE (16-40) / HIGH (41-71) / CRITICAL (>71)
+fuzzy_score = weighted_mean(breach_ratio, 1-confidence, cloud_volatility) via μ functions
+
+─── DSM risk classification (USER_CONFIGURABLE, KERC slab rates) ───
+
+# deviation %  → risk level   → action                  → penalty rate
+# 0–5%         NORMAL          No action                 ₹0/kWh (within band)
+# 5–10%        MODERATE        Monitor                   ₹2/kWh
+# 10–15%       HIGH            Investigate               ₹4/kWh
+# >15%         CRITICAL        Manual inspection         ₹6/kWh (100% of PP rate)
+
+─── ML metrics (OFFICIAL_SOURCE, sklearn.metrics) ───
+
+MAE  = (1/n) × Σ|y_true − y_pred|
+RMSE = √((1/n) × Σ(y_true − y_pred)²)
+MAPE = (100/n) × Σ|y_true − y_pred| / y_true
+R²   = 1 − Σ(y_true − y_pred)² / Σ(y_true − ȳ)²
+
+─── RL (REINFORCE policy gradient) ───
+
+∇θ J(θ) = E[∇θ log π(a|s) · R(t)]
+# State: [hour, GHI, temp, cloud, pv_gen]  Action: rate multiplier ∈ {0.8, 0.9, 1.0, 1.1, 1.2}
+# Reward: hourly_production − penalty − consumer_discount
+
+─── Substation reliability (MODEL_LEARNED from OSM data) ───
+
+reliability_score = 0.6 − 0.1 × (missing field count)
+# capacity_mva is 100% null in OSM → always reduces reliability; user must supply it
+
+─── Haversine distance (substation matching) ───
+
+d = 2·R·arcsin(√(sin²(Δφ/2) + cos(φ₁)·cos(φ₂)·sin²(Δλ/2)))   # R = 6,371 km
+
+─── Energy & settlement ───
+
+surplus_mw      = production_mw − load_mw
+self_consumption = min(production, load) / production
+net_owner_settlement = Σ hourly (penalty + bonus − consumer_discount)
+```
+
+All formulas are documented with source classification and code references in
+**[docs/FORMULA_SOURCES.md](docs/FORMULA_SOURCES.md)** (13 formula sections with provenance).
+
+### Data sources (all real, all labelled)
+
+| Source | Role |
+|---|---|
+| Open-Meteo | Live hourly weather (key-less) — the only live forecast source |
+| **NLR NSRDB** (ex-NREL) | Historical satellite GHI/DNI/DHI for India (suny-india 2000-14, himawari 2016-20) — training/backtesting; key via developer.nlr.gov |
+| Kaggle PV / irradiance / load | ML training datasets (REAL_INDIA / REAL_BENGALURU labels) |
+| OpenStreetMap Overpass | Substation locations (ODbL) |
+
 ### Try it (backend running on `:8000`)
 
 ```bash
@@ -186,6 +288,8 @@ Verified reachable (HTTP only): **http://suryagrid.mithungowda.in/** — fronten
 ---
 
 ## Documentation
+
+**Full index:** [docs/INDEX.md](docs/INDEX.md) — every document with a one-line summary and "when to read" guide.
 
 **Start here:** [App Flow & DSM Logic](docs/APP_FLOW.md) · [System Architecture](docs/ARCHITECTURE.md) ·
 [API Reference](docs/API_REFERENCE.md) (61 endpoints) · [Deployment](docs/DEPLOYMENT.md)

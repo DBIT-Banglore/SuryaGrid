@@ -3,9 +3,15 @@
 Combines how far the deviation exceeds the allowed band with forecast confidence
 to produce a 0-100 score and a LOW/MEDIUM/HIGH/CRITICAL band. This is a transparent,
 reproducible scoring rule (no arbitrary tuning, no LLM).
+
+The composite variant `calculate_dynamic_risk_score` (deviation x 0.6 + PV-health
+risk x 0.4) lives in app.agents.dynamic_risk and is exposed here via
+`dynamic_score()` so callers have one import point.
 """
 
 from __future__ import annotations
+
+from app.agents.dynamic_risk import calculate_dynamic_risk_score
 
 LOW, MEDIUM, HIGH, CRITICAL = "LOW", "MEDIUM", "HIGH", "CRITICAL"
 
@@ -35,3 +41,20 @@ class RiskAgent:
             level = CRITICAL
 
         return {"risk_score": round(score, 2), "risk_level": level}
+
+    def dynamic_score(
+        self,
+        actual_kwh: float,
+        scheduled_kwh: float,
+        pv_score: float,
+        w_dev: float = 0.6,
+        w_pv: float = 0.4,
+    ) -> dict:
+        """Weighted composite: deviation % (w_dev=0.6) + PV health risk (w_pv=0.4)."""
+        return calculate_dynamic_risk_score(
+            actual_kwh=actual_kwh,
+            scheduled_kwh=scheduled_kwh,
+            pv_score=pv_score,
+            w_dev=w_dev,
+            w_pv=w_pv,
+        )

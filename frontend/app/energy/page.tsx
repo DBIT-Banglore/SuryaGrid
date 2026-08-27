@@ -13,6 +13,7 @@ import {
 import { getEnergy } from "@/lib/api";
 import { CONSUMPTION_PROFILES, LOCATIONS } from "@/lib/locations";
 import MetricCard from "@/components/cards/MetricCard";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 import type { EnergyBalance } from "@/lib/types";
 
 export default function EnergyPage() {
@@ -56,6 +57,52 @@ export default function EnergyPage() {
           Real production vs consumption · surplus, deficit and self-consumption
         </p>
       </div>
+
+      <HowItWorks
+        title="How the energy balance is computed"
+        subtitle="Hourly PV production vs a load profile, with self-consumption and grid flow"
+        steps={[
+          { step: "Fetch hourly irradiance from Open-Meteo", detail: "GHI, DNI, DHI, cloud cover, temperature for the site coordinates. Used to compute PV production each hour." },
+          { step: "Compute PV production (pvlib physics)", detail: "Erbs decomposition → POA transposition → Faiman cell temp → PVWatts DC → inverter AC → hourly MW." },
+          { step: "Generate consumption load profile", detail: "Three profiles: residential (evening peak), commercial (midday peak), industrial (flat). Base kW = capacity_mw × 1000 × 0.35 as the consumption baseline." },
+          { step: "Compute per-hour surplus/deficit", detail: "surplus_kw = max(0, production_kw − consumption_kw); deficit_kw = max(0, consumption_kw − production_kw)." },
+          { step: "Aggregate day totals", detail: "total_production_kwh, total_consumption_kwh, self_consumption_pct = self_consumed / production × 100, grid_export = surplus summed." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "Open-Meteo", label: "hourly irradiance" },
+        { name: "pvlib", label: "PVWatts generation" },
+        { name: "Load profiles", label: "residential / commercial / industrial" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="Hourly production (pvlib)"
+          formula={"POA = get_total_irradiance(tilt, az, zenith, az_sun, dni, ghi, dhi)\nt_cell = faiman(poa, temp_air, wind)\nDC = pvwatts_dc(poa, t_cell, pdc0, γ)\nAC_kw = pvwatts_inverter(DC, pdc0, η=0.96)\nproduction_kw = min(AC_kw, capacity_mw × 1000)"}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="Hourly surplus / deficit"
+          formula={"surplus_kw = max(0, production − consumption)\ndeficit_kw = max(0, consumption − production)\nself_consumed_kw = min(production, consumption)"}
+          source="MODEL_LEARNED"
+        />
+        <FormulaCard
+          label="Self-consumption ratio"
+          formula={"self_consumption_pct = (Σ self_consumed_kwh\n               / Σ production_kwh) × 100"}
+          source="DATASET_DERIVED"
+        />
+        <FormulaCard
+          label="Grid export / import"
+          formula={"grid_export_kwh = Σ surplus_kw × Δt\ngrid_import_kwh = Σ deficit_kw × Δt\n# Δt = 1 hour"}
+          source="MODEL_LEARNED"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="REAL_COORDINATE_BASED"
+        note="Production derived from live Open-Meteo weather at real site coordinates. Consumption profiles are synthetic baselines scaled to plant capacity."
+      />
 
       <div className="flex flex-wrap items-end gap-3 mb-8">
         <div>

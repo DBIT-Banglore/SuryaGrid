@@ -1,6 +1,6 @@
 {
   "model_name": "dsm_classifier",
-  "model_version": "20260706154404",
+  "model_version": "20260827081634",
   "training_data_files": [
     "dsm_agent_training.parquet",
     "bengaluru_weather_solar_history.parquet"
@@ -63,9 +63,9 @@
   ],
   "prediction_type": "dsm_deviation_breach_risk",
   "model_type": "random_forest_classifier",
-  "created_at": "2026-07-06T15:44:04.426346+00:00",
+  "created_at": "2026-08-27T08:16:34.576048+00:00",
   "notes": [
-    "rules_engine=D:\\Suryagrid AI\\backend\\models\\trained\\dsm_rules_engine.json",
+    "rules_engine=/app/models/trained/dsm_rules_engine.json",
     "emits_rupee_values=false (framework-only DSM recommendations)."
   ]
 }

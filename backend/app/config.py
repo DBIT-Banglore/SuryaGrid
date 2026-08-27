@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     WEATHER_PROVIDER: str = "open-meteo"
     WEATHER_API_BASE_URL: str = "https://api.open-meteo.com/v1/forecast"
 
+    # NREL NSRDB (historical satellite irradiance; training/backtesting only).
+    # Free key at https://developer.nrel.gov/signup - without it the provider
+    # raises NOT_AVAILABLE instead of silently falling back.
+    NREL_API_KEY: str = ""
+    NREL_API_EMAIL: str = ""
+
     # DSM defaults (see docs/DSM_RULE_SOURCES.md)
     DSM_DEFAULT_REGION: str = "Karnataka"
     DSM_DEFAULT_RULE_PROFILE: str = "kerc-solar"

@@ -1,6 +1,6 @@
 {
   "model_name": "load_forecast_model",
-  "model_version": "20260706154406",
+  "model_version": "20260827081637",
   "training_data_files": [
     "karnataka_or_india_load_history.parquet",
     "load_agent_training.parquet"
@@ -37,10 +37,10 @@
   "train_test_split_method": "chronological_80_20",
   "metrics": {
     "chosen_model": "hist_gradient_boosting",
-    "mae": 4629.4623,
-    "rmse": 6259.5023,
-    "mape_percent": 2.549,
-    "r2": 0.883,
+    "mae": 4602.1813,
+    "rmse": 6249.2767,
+    "mape_percent": 2.534,
+    "r2": 0.8834,
     "candidates": {
       "random_forest": {
         "mae": 4632.878,
@@ -49,10 +49,10 @@
         "r2": 0.8804
       },
       "hist_gradient_boosting": {
-        "mae": 4629.4623,
-        "rmse": 6259.5023,
-        "mape_percent": 2.549,
-        "r2": 0.883
+        "mae": 4602.1813,
+        "rmse": 6249.2767,
+        "mape_percent": 2.534,
+        "r2": 0.8834
       }
     }
   },
@@ -73,7 +73,7 @@
   ],
   "prediction_type": "load_forecast",
   "model_type": "hist_gradient_boosting",
-  "created_at": "2026-07-06T15:44:06.216623+00:00",
+  "created_at": "2026-08-27T08:16:37.712585+00:00",
   "notes": [
     "source_scope=India (national); source_label=REAL_INDIA.",
     "REAL_INDIA (national) is not foreign, but is NOT Bengaluru-local -> local_data_available=false, domain_shift_risk=HIGH."

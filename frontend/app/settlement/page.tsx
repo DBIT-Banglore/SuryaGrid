@@ -13,6 +13,7 @@ import {
 import { getRLRates, settleDay } from "@/lib/api";
 import { CONSUMPTION_PROFILES, LOCATIONS } from "@/lib/locations";
 import MetricCard from "@/components/cards/MetricCard";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 import type { RLRates, SettlementDay } from "@/lib/types";
 
 export default function SettlementPage() {
@@ -62,6 +63,70 @@ export default function SettlementPage() {
           Reward, penalty and discount settlement · rates set by the RL policy
         </p>
       </div>
+
+      <HowItWorks
+        title="How the settlement engine works"
+        subtitle="Hourly energy balance converted to rupee charges and rewards"
+        steps={[
+          { step: "Compute hourly energy balance", detail: "For each hour: production_kw (from pvlib) vs consumption_kw (from the load profile). surplus = max(0, prod − cons); deficit = max(0, cons − prod)." },
+          { step: "Apply penalty / bonus rates", detail: "If the owner under-produces (deficit), they pay penalty_rate ₹/kWh. If they over-produce (surplus), they earn bonus_rate ₹/kWh. The discount_rate gives consumers a credit for surplus absorbed locally." },
+          { step: "Rate source: RL policy or defaults", detail: "When use_rl_rates is true, the REINFORCE-trained policy provides the rates. Otherwise, default rates are used (penalty ₹4, bonus ₹2, discount ₹1)." },
+          { step: "Aggregate day totals", detail: "total_penalty = Σ deficit_kWh × penalty_rate; total_bonus = Σ surplus_kWh × bonus_rate; total_discount = Σ self_consumed_kWh × discount_rate." },
+          { step: "Net owner settlement", detail: "net_owner = total_bonus − total_penalty. Positive = the owner earns; negative = the owner owes. The RL agent optimizes these rates to minimize penalty while maintaining surplus." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "RL Policy", label: "REINFORCE-trained rates" },
+        { name: "pvlib", label: "hourly production" },
+        { name: "Load profiles", label: "residential / commercial / industrial" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="Hourly penalty (under-production)"
+          formula={"penalty_hour = deficit_kWh × penalty_rate\ndeficit_kWh = max(0, cons_kWh − prod_kWh)"}
+          variables={[
+            { name: "penalty_rate", desc: "₹/kWh — from RL policy or default (₹4)" },
+          ]}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Hourly bonus (over-production)"
+          formula={"bonus_hour = surplus_kWh × bonus_rate\nsurplus_kWh = max(0, prod_kWh − cons_kWh)"}
+          variables={[
+            { name: "bonus_rate", desc: "₹/kWh — from RL policy or default (₹2)" },
+          ]}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Consumer discount (self-consumption)"
+          formula={"discount_hour = self_consumed_kWh × discount_rate\nself_consumed = min(prod, cons)"}
+          variables={[
+            { name: "discount_rate", desc: "₹/kWh — from RL policy or default (₹1)" },
+          ]}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Net owner settlement"
+          formula={"net_owner = total_bonus − total_penalty\ntotal_penalty = Σ deficit_kWh × penalty_rate\ntotal_bonus = Σ surplus_kWh × bonus_rate\ntotal_discount = Σ self_consumed × discount_rate"}
+          source="MODEL_LEARNED · RL"
+        />
+        <FormulaCard
+          label="RL reward function (REINFORCE)"
+          formula={"reward = Σ (bonus − penalty) − α × variance(deviation)\npolicy π(a|s) updates via policy gradient:\n∇θ J = E[∇θ log π(a|s) × G_t]"}
+          variables={[
+            { name: "α", desc: "Risk-aversion penalty weight on deviation variance" },
+            { name: "G_t", desc: "Discounted return from time t" },
+          ]}
+          source="MODEL_LEARNED"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="MODEL_LEARNED + USER_CONFIGURABLE"
+        note="Rates may come from the RL policy (REINFORCE on real irradiance data) or from configurable defaults. The settlement is a decision-support tool, not a regulatory settlement."
+      />
 
       {/* RL rate cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

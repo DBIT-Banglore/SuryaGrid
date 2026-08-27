@@ -168,6 +168,31 @@ SOURCES: dict[str, SourceRecord] = {
         verified="verified",
         doc_anchor="src-pvlib-001",
     ),
+    "SRC-NSRDB-001": SourceRecord(
+        id="SRC-NSRDB-001",
+        name="NLR NSRDB (satellite-derived historical irradiance; ex-NREL)",
+        type="weather",
+        classification=OFFICIAL_SOURCE,
+        url="https://developer.nlr.gov/docs/solar/nsrdb/",
+        license="Free with developer key (registered at developer.nlr.gov/signup)",
+        access_date=_ACCESS,
+        unit="irradiance W/m2 (GHI/DNI/DHI); temp C; wind m/s; pressure hPa",
+        fields={
+            "ghi_w_m2": "ghi",
+            "dni_w_m2": "dni",
+            "dhi_w_m2": "dhi",
+            "temperature_c": "air_temperature",
+            "wind_speed_mps": "wind_speed",
+            "pressure_hpa": "surface_pressure",
+        },
+        notes="HISTORICAL only (no forecast): satellite-derived hourly data. India coverage "
+        "via suny-india (2000-2014) and himawari (2016-2020) + himawari-tmy. Live-verified "
+        "2026-08-26 with a real Bengaluru POINT(77.59 12.97) download (8760 rows). NOTE: the "
+        "laboratory was renamed NREL->NLR and nrel.gov now NXDOMAINs; use developer.nlr.gov. "
+        "Requires NREL_API_KEY env var.",
+        verified="verified",
+        doc_anchor="src-nsrdb-001",
+    ),
     "SRC-NASA-POWER-001": SourceRecord(
         id="SRC-NASA-POWER-001",
         name="NASA POWER (reserved future provider)",

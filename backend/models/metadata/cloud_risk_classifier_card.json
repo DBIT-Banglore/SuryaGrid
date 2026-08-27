@@ -1,6 +1,6 @@
 {
   "model_name": "cloud_risk_classifier",
-  "model_version": "20260706154403",
+  "model_version": "20260827081631",
   "training_data_files": [
     "cloud_agent_training.parquet",
     "bengaluru_weather_solar_history.parquet"
@@ -64,6 +64,6 @@
   ],
   "prediction_type": "irradiance_drop_risk",
   "model_type": "random_forest_classifier",
-  "created_at": "2026-07-06T15:44:03.683538+00:00",
+  "created_at": "2026-08-27T08:16:31.217681+00:00",
   "notes": []
 }

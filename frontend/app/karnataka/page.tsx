@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getBescomStatus, getKarnatakaRegions, seedKarnataka } from "@/lib/api";
 import MetricCard from "@/components/cards/MetricCard";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 import type { BescomStatus, KarnatakaRegions } from "@/lib/types";
 
 export default function KarnatakaPage() {
@@ -44,6 +45,62 @@ export default function KarnatakaPage() {
         </button>
       </div>
       {msg && <div className="glass-card p-3 mb-6 text-sm text-cyan-300">{msg}</div>}
+
+      <HowItWorks
+        title="How the Karnataka / BESCOM framework works"
+        subtitle="KERC deviation settlement for solar generators in Karnataka"
+        steps={[
+          { step: "KERC DSM framework", detail: "The Karnataka Electricity Regulatory Commission (KERC) defines a deviation settlement mechanism for solar generators with a ±5% tolerance band of available capacity." },
+          { step: "BESCOM as the distribution licensee", detail: "Bangalore Electricity Supply Company (BESCOM) is the distribution licensee for the Bengaluru region. The SLDC (State Load Dispatch Centre) monitors real-time generation against declared schedules." },
+          { step: "Deviation calculation", detail: "deviation_pct = (|actual − scheduled| / Δt_h) × block_h / available_capacity × 100. Within ±5% → no charge. Beyond 5% → escalating slab charges." },
+          { step: "Slab rates (representative)", detail: "0–15% beyond band: ₹2/kWh. 15–25%: ₹4/kWh. >25%: ₹6/kWh. Rates are USER_CONFIGURABLE_PENDING_OFFICIAL_SOURCE — the platform does not compute rupee charges without a verified official tariff." },
+          { step: "Regional site registry", detail: "Karnataka solar sites are seeded from the site registry (Pavagada, Bengaluru, etc.) with their DISCOM assignments and capacities. The total fleet capacity drives state-wide DSM exposure analysis." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "KERC", label: "solar DSM band ±5%" },
+        { name: "BESCOM", label: "Bangalore distribution" },
+        { name: "Karnataka SLDC", label: "schedule monitoring" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="KERC solar DSM band"
+          formula={"tolerance = ±5% of available_capacity\ndeviation_pct = (|actual − scheduled| / Δt_h)\n             × block_h / available_capacity × 100"}
+          variables={[
+            { name: "available_capacity", desc: "Installed capacity in MW (CERC 6(2)(a))" },
+            { name: "Δt_h", desc: "Evaluation interval in hours" },
+            { name: "block_h", desc: "DSM time-block (time_block_minutes / 60)" },
+          ]}
+          source="USER_CONFIGURABLE · KERC"
+        />
+        <FormulaCard
+          label="KERC slab charges (representative)"
+          formula={"if |dev_pct| ≤ 5%:   NO_CHARGE\nif 5% < |dev_pct| ≤ 15%:  ₹2/kWh\nif 15% < |dev_pct| ≤ 25%: ₹4/kWh\nif |dev_pct| > 25%:       ₹6/kWh\ncharge = Σ slab_kWh × slab_rate"}
+          source="USER_CONFIGURABLE_PENDING_OFFICIAL_SOURCE"
+        />
+        <FormulaCard
+          label="Chargeable energy per slab"
+          formula={"slab_kWh = (pct_in_slab / 100)\n  × capacity_mw × 1000 × interval_hours"}
+          source="USER_CONFIGURABLE"
+        />
+        <FormulaCard
+          label="Dynamic risk score (composite)"
+          formula={"dev_pct = |actual − scheduled| / scheduled × 100\npv_risk = (1 − pv_score) × 100\nscore = clamp(0.6 × dev_pct + 0.4 × pv_risk, 0, 100)\n→ NORMAL (≤15), MODERATE (16-40), HIGH (41-71), CRITICAL (>71)"}
+          source="FALLBACK_DEFAULT"
+        />
+        <FormulaCard
+          label="DSM risk classification"
+          formula={"dev ≤ 5%:  NORMAL     · no penalty · no action\n5–10%:  MODERATE  · ₹2/kWh  · monitor\n10–15%: HIGH       · ₹4/kWh  · investigate\n>15%:   CRITICAL   · ₹6/kWh  · manual inspection"}
+          source="USER_CONFIGURABLE · KERC"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="USER_CONFIGURABLE_PENDING_OFFICIAL_SOURCE"
+        note="KERC slab rates are representative values pending official tariff confirmation. The platform computes deviation % and risk scores but labels rupee charges as framework-only."
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <MetricCard title="Fleet Capacity" value={totalGw} unit="GW" color="green" subtitle="Across Karnataka" />

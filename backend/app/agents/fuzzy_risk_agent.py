@@ -120,10 +120,13 @@ class FuzzyRiskAgent:
 
     @staticmethod
     def _level(score: float) -> str:
-        if score < 25:
+        """Risk level thresholds aligned to the DSM classification (see docs/FORMULA_SOURCES.md#14):
+        <16 LOW (Normal), <41 MEDIUM (Moderate), <=71 HIGH, >71 CRITICAL.
+        """
+        if score < 16:
             return LOW
-        if score < 50:
+        if score < 41:
             return MEDIUM
-        if score < 75:
+        if score <= 71:
             return HIGH
         return CRITICAL

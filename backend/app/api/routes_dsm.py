@@ -110,6 +110,28 @@ async def advanced_check(req: DSMAdvancedCheckRequest, db: AsyncSession = Depend
     result["predicted_generation_mw"] = req.predicted_generation_mw
     result["profile"] = profile.name
 
+    # Composite dynamic risk (docs/FORMULA_SOURCES.md#11): deviation % weighted
+    # 0.6 + PV-health risk weighted 0.4. PV health proxies the ratio of actual
+    # to predicted generation (1.0 = healthy plant, 0 = no output).
+    from app.agents.dynamic_risk import calculate_dynamic_risk_score
+
+    pv_health = (
+        0.0
+        if req.predicted_generation_mw <= 0
+        else min(1.0, measured / req.predicted_generation_mw)
+    )
+    result["dynamic_risk"] = calculate_dynamic_risk_score(
+        actual_kwh=measured,
+        scheduled_kwh=req.scheduled_generation_mw,
+        pv_score=pv_health,
+    )
+
+    # The engine already adds risk_level/risk_action/penalty_slab/rate to the
+    # result via classify_dsm_risk in DSMEngine._result(). The dynamic_risk
+    # dict above also carries risk_level/action/penalty_slab. We surface both
+    # so the UI can show the deviation-based classification and the composite
+    # dynamic risk score side by side.
+
     # Persist when the site is registered
     site = await repository.get_site(db, req.site_id) if req.site_id else None
     persisted = False

@@ -80,11 +80,18 @@ Engine: `app/dsm/dsm_engine.py`. Sources map: `app/dsm/dsm_sources.py`.
 ## 4. Outputs (per interval / per settlement)
 
 `deviation_mw, deviation_percent, deviation_direction, dsm_band, penalty_status,
-charge_rate, estimated_dsm_charge, rule_source, explanation`.
+charge_rate, estimated_dsm_charge, rule_source, explanation, risk_level, risk_action,
+penalty_slab, rate_inr_per_kwh`.
 
 - `penalty_status ∈ {NO_PENALTY, PENALTY_RISK, WITHIN_LIMIT, INVALID_SCHEDULE}`.
 - `rule_source` cites the profile's `source_name`+`source_url`+`source_status`.
 - Divide-by-zero guarded: zero/negative denominator ⇒ `INVALID_SCHEDULE`, charge 0.
+- `risk_level ∈ {NORMAL, MODERATE, HIGH, CRITICAL}` — see §6 below.
+
+## 5. Honesty statement
+
+This system provides **decision-support estimates**, not a settlement of record. The
+penalty figures depend on the live regulatory order in force for the specific region,
 
 ---
 
@@ -95,3 +102,27 @@ penalty figures depend on the live regulatory order in force for the specific re
 regulator, generator type, and period. Operators must load the current official rates
 into the rule profile before treating any figure as authoritative. Profiles carrying
 `USER_CONFIGURABLE_PENDING_OFFICIAL_SOURCE` are explicitly non-authoritative defaults.
+
+---
+
+## 6. DSM risk classification (deviation → level → action)
+
+Every DSM evaluation now carries a four-tier risk classification based on the deviation
+percentage. The slab rates match the KERC solar default slabs (₹2 / ₹4 / ₹6 per kWh).
+
+| Deviation % | Risk level | Action | Penalty slab | Rate (₹/kWh) |
+|---|---|---|---|---|
+| 0–5% | **NORMAL** | No action — within ±5% tolerance band | — | 0.0 |
+| 5–10% | **MODERATE** | Monitor — deviation under 10% | 5–10% | 2.0 |
+| 10–15% | **HIGH** | Investigate — deviation exceeds 10% | 10–15% | 4.0 |
+| >15% | **CRITICAL** | Manual inspection needed — deviation exceeds 15% | >15% | 6.0 |
+
+- **Thresholds:** `RISK_NORMAL_MAX = 5.0`, `RISK_MODERATE_MAX = 10.0`,
+  `RISK_HIGH_MAX = 15.0` (constants in `app/agents/dynamic_risk.py`).
+- **Code:** `app/agents/dynamic_risk.py::classify_dsm_risk` — pure function, no ML.
+- **Engine integration:** `app/dsm/dsm_engine.py::_result` adds `risk_level`,
+  `risk_action`, `penalty_slab`, `rate_inr_per_kwh` to every DSM engine result.
+- **Fuzzy risk alignment:** `app/agents/fuzzy_risk_agent.py::_level` uses the same
+  thresholds: `<16 → LOW (Normal)`, `<41 → MEDIUM (Moderate)`, `≤71 → HIGH`,
+  `>71 → CRITICAL`.
+- See also: `docs/FORMULA_SOURCES.md#14-dsm-risk-classification`.

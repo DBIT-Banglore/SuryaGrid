@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import OfflineBanner from "@/components/OfflineBanner";
 import MetricCard from "@/components/cards/MetricCard";
+import { HowItWorks, FormulaCard, FormulaGrid, SourceBadges, ProvenanceNote } from "@/components/InfoSection";
 
 export default function MLPage() {
   const [online, setOnline] = useState<boolean | null>(null);
@@ -58,6 +59,63 @@ export default function MLPage() {
       <p className="text-white/40 mt-1 mb-6">
         Kaggle ingestion → augmented dataset → scikit-learn training → formula/ml/hybrid forecasting.
       </p>
+
+      <HowItWorks
+        title="How the ML pipeline works"
+        subtitle="From raw Kaggle data to a trained irradiance model"
+        steps={[
+          { step: "Kaggle ingestion", detail: "Raw solar power generation data is downloaded from Kaggle (anikannal/solar-power-generation-plant) and cached locally. Includes Plant 1 & 2 generation logs and weather sensor data." },
+          { step: "Feature engineering", detail: "The raw CSVs are parsed, unit-converted (°F→°C, inHg→hPa, mph→m/s), and joined on timestamp. Features include GHI, ambient temp, module temp, irradiance, wind speed, humidity." },
+          { step: "Augmented dataset build", detail: "The build_kaggle_ml_datasets pipeline merges the cleaned Kaggle data with pvlib-derived features (solar position, POA) to create the ML training table." },
+          { step: "Model training", detail: "scikit-learn HistGradientBoostingRegressor trained on the augmented table. Target = irradiance (GHI). The model predicts GHI, then pvlib physics converts GHI → MW generation." },
+          { step: "Forecast mode selection", detail: "auto mode: use ML prediction if a valid model exists, else fall back to pvlib formula. hybrid mode: blend ML + formula with confidence weighting. formula mode: pure pvlib physics." },
+          { step: "Model evaluation", detail: "Standard regression metrics (MAE, RMSE, MAPE, R²) on a held-out test split. Model card is stored in backend/models/metadata/ with training data, metrics, and production-ready flag." },
+        ]}
+      />
+
+      <SourceBadges sources={[
+        { name: "Kaggle", label: "solar-power-generation-plant" },
+        { name: "scikit-learn", label: "HistGradientBoostingRegressor" },
+        { name: "pvlib", label: "GHI→MW physics conversion" },
+      ]} />
+
+      <FormulaGrid title="Formulas used">
+        <FormulaCard
+          label="ML target: irradiance prediction"
+          formula={"model.predict(features) → GHI_pred\n# HistGradientBoostingRegressor\n# Features: temp, module_temp, irradiance,\n#            wind_speed, humidity, hour, month"}
+          source="MODEL_LEARNED"
+        />
+        <FormulaCard
+          label="Irradiance → generation (pvlib)"
+          formula={"Erbs(ghi, zenith) → DNI, DHI\nPOA = get_total_irradiance(...)\nt_cell = faiman(poa, temp, wind)\nDC = pvwatts_dc(poa, t_cell, pdc0, γ)\nAC = pvwatts_inverter(DC, η=0.96)\nMW = min(AC / 1e6, capacity)"}
+          source="OFFICIAL_SOURCE · pvlib"
+        />
+        <FormulaCard
+          label="MAE (Mean Absolute Error)"
+          formula={"MAE = (1/n) Σ |y_true − y_pred|"}
+          source="OFFICIAL_SOURCE · sklearn"
+        />
+        <FormulaCard
+          label="R² (Coefficient of determination)"
+          formula={"R² = 1 − SS_res / SS_tot\nSS_res = Σ (y_true − y_pred)²\nSS_tot = Σ (y_true − mean)²"}
+          source="OFFICIAL_SOURCE · sklearn"
+        />
+        <FormulaCard
+          label="RMSE (Root Mean Square Error)"
+          formula={"RMSE = √( (1/n) Σ (y_true − y_pred)² )"}
+          source="OFFICIAL_SOURCE · sklearn"
+        />
+        <FormulaCard
+          label="MAPE (Mean Abs % Error)"
+          formula={"MAPE = (100/n) Σ |y_true − y_pred| / |y_true|"}
+          source="OFFICIAL_SOURCE · sklearn"
+        />
+      </FormulaGrid>
+
+      <ProvenanceNote
+        label="MODEL_LEARNED + OFFICIAL_SOURCE"
+        note="The ML model is trained on real Kaggle solar plant data; generation is derived via pvlib physics, not learned directly. Model card stored in models/metadata/."
+      />
 
       {online === false && <OfflineBanner base={API_BASE} />}
       {online === null && <div className="glass-card p-6 text-white/50">Checking backend…</div>}
